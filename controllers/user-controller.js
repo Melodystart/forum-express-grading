@@ -1,9 +1,10 @@
 const bcrypt = require('bcryptjs')
-const { User, Restaurant, Favorite, Like } = require('../models')
+const { User, Restaurant, Favorite, Like, Comment } = require('../models')
 const { imgurFileHandler } = require('../helpers/file-helpers')
 
 const userController = {
   signUpPage: (req, res) => {
+    console.log('signup page')
     res.render('signup')
   },
   signUp: (req, res, next) => {
@@ -40,8 +41,13 @@ const userController = {
     })
   },
   getUser: (req, res, next) => {
-    return User.findByPk(req.params.id, { raw: true })
-      .then(user => res.render('users/profile', { user }))
+    return User.findByPk(req.params.id, {
+      include: [{ model: Comment, include: Restaurant }],
+      nest: true // 移除raw: true，因資料尚需處理，還不能轉換成JS格式
+    })
+      .then(user => {
+        res.render('users/profile', { user: user.toJSON(), userOfLogin: req.user })
+      })
       .catch(err => next(err))
   },
   putUser: (req, res, next) => {
@@ -137,17 +143,13 @@ const userController = {
       .catch(err => next(err))
   },
   removeLike: (req, res, next) => {
-    const { restaurantId } = req.params
-    return Promise.all([
-      Restaurant.findByPk(restaurantId),
-      Like.findOne({
-        where: {
-          userId: req.user.id,
-          restaurantId
-        }
-      })])
-      .then(([restaurant, like]) => {
-        if (!restaurant) throw new Error("Restaurant didn't exist!")
+    return Like.findOne({
+      where: {
+        userId: req.user.id,
+        restaurantId: req.params.restaurantId
+      }
+    })
+      .then(like => {
         if (!like) throw new Error("You haven't liked this restaurant")
 
         return like.destroy()
