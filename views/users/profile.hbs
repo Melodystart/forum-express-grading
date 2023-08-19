@@ -14,7 +14,7 @@
       <li>{{user.email}}</li>
       <p></p>
     </ul>
-    {{#ifCond user.id userOfLogin.id }}
+    {{#ifCond user.id loginUser.id }}
     <button type="button" class="btn btn-primary btn-sm">
       <a class="btn btn-primary btn-sm" href="/users/{{userOfLogin.id}}/edit">
         Edit
